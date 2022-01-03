@@ -2,4 +2,4 @@
 
 > Today I Learned
 
-A collection of concise write-ups on small things I learn day to day across a variety of languages and technologies.
+様々な言語や技術について、日々学んでいることを簡潔にまとめた記事です。
