@@ -1,8 +1,8 @@
 def two_sum(nums, target)
-  nums.each_with_index do |num, i|
-    dif = target - num
-    j = nums.find_index(dif)
-    return [i, j] if j && j != i
+  nums.each_with_index do |num, index|
+    rest = target - num
+    rest_index = nums.index(rest)
+    return [index, rest_index] if rest_index && rest_index != index
   end
 end
 
