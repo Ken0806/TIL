@@ -23,3 +23,7 @@ def max_depth(root)
   end
   depth
 end
+
+def max_depth_answer(root)
+  root ? 1 + [max_depth(root.left), max_depth(root.right)].max : 0
+end
