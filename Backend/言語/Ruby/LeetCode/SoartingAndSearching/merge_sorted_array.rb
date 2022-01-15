@@ -15,3 +15,8 @@ def merge(nums1, m, nums2, n)
   end
   nums1[0...n] = nums2[0...n] if m == 0
 end
+
+def merge_answer(nums1, m, nums2, n)
+  nums1[m..m + n] = nums2
+  nums1.sort!
+end
