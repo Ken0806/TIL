@@ -2,19 +2,14 @@
 # @return {Integer}
 def max_profit(prices)
   profit = 0
-  day_to_buy = 0
-  while day_to_buy < prices.length - 1
-    day_to_sell = prices.index {|price| price > prices[day_to_buy]}
-    if day_to_sell && day_to_sell > day_to_buy
-      if prices[day_to_buy+1...day_to_sell].index {|price| price < prices[day_to_buy]}
-        day_to_buy = prices[day_to_buy+1...day_to_sell].index {|price| price < prices[day_to_buy]} + day_to_buy + 1
-      else
-        profit += prices[day_to_sell] - prices[day_to_buy]
-        day_to_buy = day_to_sell
-      end
-    else
-      day_to_buy += 1
-    end
+  prices.each_with_index do |price, i|
+    profit += prices[i + 1] - price if prices[i + 1] && price < prices[i + 1]
   end
   profit
+end
+
+def max_profit_answer(prices)
+  s = 0
+  prices.each_cons(2) { |a, b| b > a && s += b - a }
+  s
 end
