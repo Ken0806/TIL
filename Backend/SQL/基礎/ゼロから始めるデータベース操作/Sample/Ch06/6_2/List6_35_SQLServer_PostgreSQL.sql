@@ -1,4 +1,4 @@
---SQL ServerAPostgreSQL
+--SQL ServerPostgreSQL
 BEGIN TRANSACTION;
 
 INSERT INTO TenpoShohin (tenpo_id, tenpo_mei, shohin_id, suryo) VALUES ('000A',	'“Œ‹',		'0001',	30);
