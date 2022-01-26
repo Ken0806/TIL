@@ -7,5 +7,3 @@
     FROM TenpoShohin TS RIGHT OUTER JOIN Shohin S
       ON TS.shohin_id = S.shohin_id
 ORDER BY tenpo_id;
-
-test
