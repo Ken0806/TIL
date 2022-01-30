@@ -91,6 +91,12 @@ out
   %p= article.title
   %p= article.body
 
+## - と = の違い
+In haml
+= is used to write ruby code and displays the result as output
+Where as - is used to write ruby code within haml and no output is diplayed.
+(参照: https://stackoverflow.com/questions/30207750/what-is-the-difference-between-and-in-haml-while-writing-ruby-code)
+
 # 変数定義の仕方
 hamlではhamlファイルの中で変数を定義することができます。
 <p>私の名前はピカわかです。</p>
