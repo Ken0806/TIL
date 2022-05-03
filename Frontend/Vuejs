@@ -1,0 +1,375 @@
+◆Vue.js分からないことリスト
+- [ ] Vuex
+- [ ] コンポーネント
+- [ ] Store, stateの管理
+- [ ] mutations
+- [ ] getters
+- [ ] 非同期処理
+- [ ] Router
+- [ ] compute
+- [ ] template
+
+
+◆参照
+https://www.udemy.com/course/vue-js-complete-guide/learn/lecture/15371018#content
+https://jp.vuejs.org/v2/api/
+
+◆メモ
+# 学習目的
+実務でVueを実装できるようにするため。
+
+# 主要なディレクティブ
+https://prograshi.com/language/vue-js/list-of-main-directives/
+
+# ディレクティブとして指定できるイベント一覧
+https://developer.mozilla.org/en-US/docs/Web/Events
+
+# data
+あくまで初期値を設定するもの。
+this.を使っても他のデータを参照することはできない。
+
+# computedとmethodsの違いは？
+computed: 依存関係に基づいてキャッシュされる。関係のない変更が加わったときには実行されない。いつ実行されるかというと、最初に描画されるときと、参照しているdataが変わった時だけ実行される。
+method: テンプレートの中が少しでも変わって再描画されたときに実行される。関係のない変更が加わった時にも実行されてしまい、無駄があるという問題がある(大規模な開発なら問題になる)。onclickなどのディレクティブに指定するときは問題ないのだと思う。あくまでプロパティとして使うイメージ持っておくと良さそう。
+  <script>
+    new Vue({
+      el: '#app',
+      data: {
+        counter: 0
+      },
+      computed: {
+        lessThanThree: function() {
+          return this.counter < 3 ? "less than 3" : "more than 3";
+        }
+      },
+      methods: {
+        lessThanThreeMethod: function() {
+          return this.counter < 3 ? "less than 3" : "more than 3";
+        }
+      }
+    });
+  </script>
+
+# ウォッチャ
+特定のデータが変わったときに使用するもの。
+
+# computedとウォッチャの違いは？
+基本的にcomputedを使う。
+computedでできないときにウォッチャを使う。
+	具体的には、computedはテンプレート内で使っていないと、たとえ参照しているdataが変化しても実行されないので、そういう処理をしたいとき(非同期処理など)にウォッチャを使う。
+computed: {
+  lessThanThree: function() {
+    return this.counter < 3 ? "less than 3" : "more than 3";
+  }
+},
+watch: {
+  counter: function(val) {
+    console.log(val);
+  }
+}
+
+# ()が必要な場合とそうでない場合の違いは？
+{{}}内のmethodsは必ずつける(countMethod())。ディレクティブに指定する場合は()を付けなくてもいい(Vueの仕様)(@click="countMethod")。
+{{}}内のcomputedはつけない。あくまでプロパティのような立ち位置だから。
+
+# 条件付きレンダリング
+v-elseを使う場合は、必ずv-if(or v-else-if)の直下に書くこと。
+<div id="app">
+  <p v-if="ok">OK</p>
+  <p v-else>NG</p>
+</div>
+
+<div id="app">
+  <p v-if="ok">OK</p>
+  <p v-else-if="maybeOk">maybeOk</p>
+  <p v-else>NG</p>
+</div>
+
+# template
+画面上には描画されない要素。
+グループ化するときなどに用いる。
+<div id="app">
+  <template v-if="ok">
+    <p>Hello</p>
+    <p>See you</p>
+  </template>
+</div>
+
+<ul>
+  <template v-for="fruit in fruits">
+    <li>{{ fruit }}</li>
+    <hr>
+  </template>
+</ul>
+
+# v-ifとv-showの違い
+v-showは、display: noneで見えないようにする。
+  →デメリット
+    templateでは使えない(templateは要素として表示されないため)。
+    v-elseのようなことはできない(showの条件に!をつければできる)。
+    初期描画が遅い(表示しない場合にも、domに要素は追加されるから)。
+v-ifは、要素ごと消す。(ので、検証モードでも見えない)
+  →デメリット
+    表示しない場合は初期描画は早いが、逆に表示・非表示の切り替えをする場合は描画コストがかかる(わざわざ要素を消したり追加したりするから)。
+
+使い分け方
+  頻繁に表示・非表示を切り替える場合→v-showを使う。
+  表示条件が初期描画時から変わらない場合→v-ifを使う。
+
+# v-forを使うときの注意点
+v-forは、要素の移動を最小限にするアルゴリズムを持っているため、v-for内部の要素が思った通りの組み合わせにならない場合がある。
+そのような意図しない挙動を防ぐために、keyを指定する。
+注意点は、keyとして一意のものを指定すること。
+indexをしていすると、要素が移動したときにindexが変わるため、意図しない挙動となる場合があるので、idなどをデータに持たせたほうがいい。
+<div id="app">
+  <ul>
+    <li v-for="fruit in fruits" :key="fruit">
+      <p>{{ fruit }}</p>
+      <input type="text">
+    </li>
+  </ul>
+  <button @click="remove">remove</button>
+</div>
+
+<script>
+  new Vue({
+    el: "#app",
+    data: {
+      fruits: ["apple", "orange", "banana"],
+    },
+    methods: {
+      remove: function() {
+        this.fruits.shift();
+      },
+    }
+  })
+</script>
+
+# vueインスタンスを複数作るには？
+<div id="app1">
+  {{message}}
+</div>
+<div id="app2">
+  {{message}}
+</div>
+
+<script>
+  new Vue({
+    el: "#app1",
+    data: {
+      message: "instance1"
+    }
+  })
+  new Vue({
+    el: "#app2",
+    data: {
+      message: "instance2"
+    }
+  })
+</script>
+注意点: vueインスタンス間でデータのやり取りが必要な場合は、極力1つのインスタンスにまとめる。ロジックが複雑になり、保守性が損なわれるため。
+
+# インスタンス外から、インスタンス内のデータを変える方法
+let vm = new Vue({
+  el: "#app1",
+  data: {
+    message: "instance1"
+  }
+})
+
+vm.message = "書き換えられる"
+
+https://jp.vuejs.org/v2/api/
+ここの、インスタンスプロパティなどを見ると、取得できるプロパティやメソッドがかる。
+
+# インスタンス内から、dataを取得する方法
+    let vm = new Vue({
+      el: "#app",
+      data: {
+        message: "メッセージ",
+        message2: "メッセージ2",
+      },
+      computed: {
+        getData: function() {
+          return this.$data; # this.$dataは、インスタンス内のデータを取得する。
+        },
+      },
+    })
+
+# Vueのテンプレートの他の書き方
+上に書いた例とは別の書き方がある。
+例1)templateを使った書き方。
+templateに要素を書く。
+要素が複数行になったときに見通しが悪いのであまり使わない。
+
+<div id="app2"></div>
+
+new Vue({
+  el: "#app2",
+  data: {
+    message: "メッセージ",
+  },
+  template: `
+    <div>
+      <h1>{{ message }}</h1>
+    </div>
+  `,
+})
+
+例2)render関数を使った書き方。
+※createElementはdocument.createElementとはまったく別物。
+ちなみにtemplateなどを使う場合も最終的にはrender関数を使っている。
+renderのcreateElementでは、Vue.js用の仮想DOM(というか仮想ノード, javascriptのオブジェクト)を作成している。そして、VueではそれをもとにDOMを作成する。
+document.createElementでは、直接DOMを作成している。
+new Vue({
+  data: {
+    message: "メッセージ",
+  },
+  render: function(createElement) { # createElementはhと表記することも多い。
+    return createElement('div', "これは" + this.message + "です"); # 第一引数に要素名、第二引数に要素に持たせたい値を指定する。
+  },
+}).$mount('#app3')
+※$mount('#app3')はel: '#app3'と同義・
+
+# 仮想DOMとは
+DOMを模した、JavaScriotのオブジェクト。
+DOMは、ブラウザに保持されたオブジェクト(検証モードで見ればわかる。表示状はHTMLっぽく表示されているが、生データはオブジェクトの形式。)。
+仮想DOMはただのJavaScriptのオブジェクト。
+
+Vueでは変更前の仮想DOMと変更後の仮想DOMを保持して、その差分を識別し、差分だけをDOMに反映させることで、パフォーマンスを向上させている。
+
+# 同じようなVueインスタンスを使い回す方法→コンポーネントを使う
+NG)elで指定した場合、一番はじめに合致したものが選択されるので、"こんにちは"は1つしか表示されない。
+<hello></hello>
+<hello></hello>
+<hello></hello>
+
+<script>
+  new Vue({
+    el: 'hello',
+    template: '<p>こんにちは</p>',
+  })
+</script>
+
+OK)componentを使う。(詳細は以下で説明)
+<div>
+  <hello></hello>
+  <hello></hello>
+</div>
+
+<script>
+  <!--  第一引数にコンポーネント名, 第二引数はVueインスタンスとほぼ同じものを取る -->
+  Vue.component("hello", {
+    template: "<p>こんにちは</p>",
+  })
+</script>
+
+# Vue CLIを使った開発方法
+## Vue CLIとは
+Vueを使って大規模な開発をするときにつかう。
+以下のようなことができる。
+- ファイルの分割
+- 最終的なコードの軽量化(ミニファイル化)
+- Babel, TypeScript, ESLintなどのpluginの使用
+- ホットリロード(HMR(Hot Module Replacement))
+- .vue, TS, SCSS, Pug, ES6などの使用
+
+# コンポーネント
+Vueインスタンスを再利用するために使うもの。
+
+## 使い方1: グローバル登録, どののvueインスタンスでも使い回し可能なコンポーネント作成方法
+Vue.componentで作成する。
+第一引数にコンポーネント名, 第二引数はVueインスタンスとほぼ同じものを取る(下の例参照)。
+基本的にはグローバル登録でなくローカル登録を使う。
+
+### 注意点
+- dataは関数で受け取る必要がある点。
+  - なぜか?
+    - 通常のVueインスタンスのようにオブジェクトで渡してしまうと、同じコンポーネントを複数箇所で使っていた場合に、同じデータを参照してしまう(= どこかのコンポーネントでデータを変えた場合に他のコンポーネントでも同名のデータが変わってしまう(同じデータを参照しているためあたり前), vuejsの仕様)。
+
+例)
+<div id="app">
+  <my-component></my-component> # 作成したコンポーネントを利用
+  <my-component></my-component>
+  <my-component></my-component>
+</div>
+
+<script>
+  <!--  第一引数にコンポーネント名, 第二引数はVueインスタンスとほぼ同じものを取る -->
+  Vue.component('my-component', { # ここでコンポーネントを作成
+    data: function() { # 関数化し、returnでデータのobjectを返す。
+      return {
+        number: 12,
+      }
+    },
+    ; data: { # これはだめ
+    ;   number: 12
+    ; },
+    template: '<p>いいね{{ number }}</p>'
+  })
+
+  new Vue({
+    el: '#app',
+  })
+</script>
+
+## 使い方2: ローカル登録, 特定のvueインスタンスのみに使いまわし可能なコンポーネント作成方法
+基本的にこちらを使う。
+
+例)
+<div id="app">
+  <my-component></my-component>
+  <my-component></my-component>
+  <my-component></my-component>
+</div>
+
+const component =
+  {                   # グローバル登録時に設定したVue.componentの第二引数とおなじものを渡せばOK
+    data: function() {
+    return {
+      number: 12,
+    }
+  },
+    template: '<p>いいね{{ number }}</p>'
+  }
+
+new Vue({
+  el: '#app',
+  components: {
+    'my-component': component
+  }
+})
+
+# .vueファイル
+シングルファイル(単一ファイル)コンポーネント。
+要はコンポーネント(オブジェクト, ローカル登録時のcomponentのようなもの？)を記載するファイル。
+.vueファイルはビルド時に、コンポーネントのオブジェクトの形に整形され、exportされる(webpackが,.vue拡張子のファイルはいい感じに解釈してくれるため)。
+基本的にimportして使う。
+
+基本的に3つの構造でできている。
+1. template
+2. script
+  基本的にexport defaultでexportする。
+3. style
+
+※最終的にimportされた場合は、1つのコンポーネントのオブジェクトとなる。
+なので以下のように使える。
+
+例1)
+<script>
+  import HelloWorld from './components/HelloWorld.vue'
+
+  export default {
+    name: 'App',
+    components: {
+      HelloWorld
+    }
+  }
+</script>
+
+例2)
+import App from './App.vue'
+
+new Vue({
+  render: h => h(App),
+}).$mount('#app')
