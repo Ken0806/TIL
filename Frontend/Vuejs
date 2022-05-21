@@ -18,6 +18,10 @@ https://jp.vuejs.org/v2/api/
 # 学習目的
 実務でVueを実装できるようにするため。
 
+# ライフサイクル
+- https://jp.vuejs.org/v2/guide/instance.html#%E3%83%A9%E3%82%A4%E3%83%95%E3%82%B5%E3%82%A4%E3%82%AF%E3%83%AB%E3%83%80%E3%82%A4%E3%82%A2%E3%82%B0%E3%83%A9%E3%83%A0
+- https://qiita.com/ksh-fthr/items/2a9f173c706ef6939f93
+
 # 主要なディレクティブ
 https://prograshi.com/language/vue-js/list-of-main-directives/
 
@@ -373,3 +377,604 @@ import App from './App.vue'
 new Vue({
   render: h => h(App),
 }).$mount('#app')
+
+
+# Vue Router
+URL毎に違うコンポーネントを表示するために利用する仕組み。
+URLにコンポーネントを関連付ける。
+SPAが作成可能になる。
+
+## 実装箇所
+どこでもいい。
+router.jsというファイルを作ってそこに実装することが多い。
+
+## 実装方法
+### import
+import Vue from 'vue';
+import Router from 'vue-router';
+
+### 初期設定
+Vue.use(Router); # useはプラグインを適用するという意味。プラグインは、Vue.js全体で使える機能のようなもの。規定の方法で自前のプラグインを作成すれば、カスタムプラグインも適用できる。
+
+### URLとコンポーネントの関連付け
+import Home from "./views/Home.vue"
+import Users from "./views/Users.vue"
+import UsersPosts from "./views/UsersPosts.vue"
+
+export default new Router({
+  routes: [
+    {
+      path: '/',
+      compoent: Home
+    },
+    {
+      path: '/users/:id', # /users/何らかの文字 のURLの場合Users componentが表示される。/usersの場合は表示されない。
+      compoent: Users,
+      children: [
+        {
+          path: 'posts', # /users/:id/post の場合に表示される。またこのURLの時、Usersコンポーネントも表示される。/postsにしないように注意。
+          component: UsersPosts
+        },
+        ... # 他にも追加可能
+      ]
+    }
+    # 豆知識: component側で $route.params.idとすると、URLの/users/123としたときの123が取り出せる。
+  ]
+})
+
+### Routerの適用
+// main.js
+import Vue from 'vue'
+import App from './App.vue'
+import router from './router'
+
+new Vue({
+  router: router, # これを追加
+  # or
+  router, # ES6記法
+  rener: h => h(App)
+}).$mount("#app")
+
+### App.vueにrouter-viewを追加
+// App.vue
+<template>
+  <div>
+    <router-view></router-view> ## これ。ここが動的コンポーネント的な感じとなる。ここがrouterに設定したURLごとのコンポーネントとなる。
+  </div>
+</template>
+
+## vue-routerを使うとURLに#がつく理由
+不必要にサーバーにアクセスさせないようにするための目印。
+#以降のURLはURLとして認識しない。
+e.g. https://localhost/#/users → https://localhostをリクエストする
+この後にhttps://localhost/#/home としてもサーバーにリクエストしない(SPAなので、表示されるコンポーネントが変わるだけ)。
+
+### #の外し方
+history modeにすることで#を外すことができる。
+ただし、こうするとリクエストは
+https://localhost/users
+となってしまう。
+なので、https://localhost/何かしらの文字 としてリクエストが来たときには、https://localhostを返す(index.htmlを返す)ようにサーバー側で設定しなくてはならない。
+
+export default new Router({
+  mode: "history", # これ
+  routes: [
+    {
+      path: '/',
+      compoent: Home
+    },
+    {
+      path: '/users',
+      compoent: Users
+    }
+  ]
+})
+
+## クリックでURLを切り替える方法
+### NGな例
+これだと毎回リクエストをサーバーに飛ばしてしまう。
+SPAとして実装している意味がない。
+
+<template>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/users">Users</a>
+  </nav>
+  <div>
+    <router-view></router-view>
+  </div>
+</template>
+
+### OKな例
+これだとサーバーにリクエストを送らずURL変更 & 表示の変更(router-viewのコンポーネントの変更)ができる。
+
+<template>
+  <nav>
+    <router-link to="/">Home</router-link>
+    <router-link to="/users">Users</router-link>
+  </nav>
+  <div>
+    <router-view></router-view>
+  </div>
+</template>
+
+
+### router-linkの属性
+#### active-class
+リンクがactiveなときに適用されるクラス。
+/usersがつくURLであればactiveとして認識される(e.g. users/1でもactiveになる)。
+/usersの完全一致にしたいなら、exactの属性も追加すればいい。
+
+<router-link to="/users" active-class="link--active" exact>Home</router-link>
+
+.link--active {
+  何らかのstyle
+}
+
+
+## コードからURLを切り替える方法
+<template>
+  <button @click="toUsers">usersに遷移</button>
+</template>
+
+<script>
+  export default {
+    methods: {
+      toUsers() {
+        # これでVueのrouterにアクセスできる。push(遷移したいURL)とすることで遷移できる。
+        this.$router.push('users');
+        # or
+        this.$router.push({path: 'users'});
+      }
+    }
+  }
+</script>
+
+## クエリを使う方法
+
+<template>
+  <nav>
+    <router-link to="/">Home</router-link>
+    <router-link to="/users", query: {lang: 'ja', page: 2}>Users</router-link> # /users?lang=ja&page=2
+  </nav>
+  <div>
+    <router-view></router-view>
+  </div>
+</template>
+
+
+## 名前付きビューを使って固定されたレイアウトを作成する
+1つのURLに対して2パターン以上表示させる。
+ヘッダー, フッターなど固定で表示するものがある場合に使う。
+
+<template>
+  <div>
+    <router-view name="header"></router-view>
+    <router-view></router-view>
+  </div>
+</template>
+
+export default new Router({
+  mode: "history", # これ
+  routes: [
+    {
+      path: '/',
+      compoents: { # component→components
+        default: Home, # router-viewで表示されるコンポーネント
+        header: HeaderHome #  router-view name="header"で表示されるコンポーネント
+      }
+    },
+    {
+      path: '/users',
+      compoent: Users
+    },
+  ]
+})
+
+
+## リダイレクトの実装方法
+export default new Router({
+  routes: [
+    {
+      path: '/',
+      compoents: {
+        default: Home,
+        header: HeaderHome
+      }
+    },
+    {
+      path: '/users',
+      compoent: Users
+    },
+    {
+      path: '/hello', # これ
+      redirect: '/'
+      # or
+      redirect: {path: '/'}
+    },
+    { # こう書くこともある
+      path: "*",  # /user* とかもできる
+      redirect: '/'
+    }
+  ]
+})
+
+
+# Vuex
+ReactにおけるReduxだと思えばいい。
+コンポーネント間のデータの受け渡しを、親子コンポーネント間のバケツリレーで行うのでなく、
+Vuexに一旦保存し、そこからデータの受け渡しをできるようにするもの。
+
+## 設定
+vue-routerで行った感じでセットアップする。
+store.jsというファイルを作ってそこに設定する場合が多い。
+
+// store.js
+import Vue from 'vue';
+import Vuex from 'vuex';
+
+Vue.use(Vuex); # useの意味はrouterのところ参照。
+
+export default new Vuex.Store({
+  state: { # 状態, Vue.js全体で使えるグローバル変数のようなものを定義する。Reactで言うstore
+    count: 2
+  }
+})
+
+// main.js
+import Vue from 'vue'
+import App from './App.vue'
+import router from './router'
+import store from './store'
+
+new Vue({
+  router,
+  store: store, # これを追加
+  # or
+  store, # ES6では同じものはこのように省略できる
+  rener: h => h(App)
+}).$mount("#app")
+
+## データへのアクセス方法
+<template>
+  <div>
+    <h3>Home</h3>
+    <p>{{ count }}</p>
+  </div>
+</template>
+
+<script>
+  export default {
+    computed: { # Vuexのプロパティを取得するときは基本的にcomputedを使う
+      count() {
+        return this.$store.state.count    # すべてのコンポーネントでこのようにアクセスできる, state, countはstore.jsに設定した名称
+      }
+    }
+  }
+</script>
+
+
+## getters
+Vuex用の算出プロパティのようなもの(computed)。
+Reactにおけるselector。
+同じ関数を複数のコンポーネントで使用するときに便利。
+あくまでstore内のデータの読み取り専用なので、以下の例のようにstore内のデータに変更を加えても、
+元データは変わらない。
+
+// home.vue(getters未使用)
+<template>
+  <div>
+    <h3>Home</h3>
+    <p>{{ doubleCount }}</p>
+  </div>
+</template>
+
+<script>
+  export default {
+    computed: {
+      doubleCount() {
+        return this.$store.state.count * 2;
+      }
+    }
+  }
+</script>
+
+// store.js
+import Vue from 'vue';
+import Vuex from 'vuex';
+
+Vue.use(Vuex);
+
+export default new Vuex.Store({
+  state: {
+    count: 2
+  },
+  getters: { # ここに関数を置く。
+    doubleCount: state => state.count * 2 # 第一引数にstate(上の行で定義しているstate)を受け取る。
+  }
+})
+
+// home.vue(getters使用)
+<template>
+  <div>
+    <h3>Home</h3>
+    <p>{{ doubleCount }}</p>
+  </div>
+</template>
+
+<script>
+  export default {
+    computed: {
+      doubleCount() {
+        return this.$store.getters.doubleCount; # これ
+      }
+    }
+  }
+</script>
+
+
+## mapGettersヘルパー
+gettersに定義した関数を簡潔にimportするための技術。
+
+// store.js
+import Vue from 'vue';
+import Vuex from 'vuex';
+
+Vue.use(Vuex);
+
+export default new Vuex.Store({
+  state: {
+    count: 2
+  },
+  getters: {
+    doubleCount: state => state.count * 2
+    tripleCount: state => state.count * 3
+  }
+})
+
+// home.vue( mapGetters使用)
+<template>
+  <div>
+    <h3>Home</h3>
+    <p>{{ doubleCount }}</p> # 使える
+    <p>{{ tripleCount }}</p> # 使える
+  </div>
+</template>
+
+<script>
+  import {mapGetters} from "vuex" # これ
+
+  export default {
+    computed: mapGetters(["doubleCount", "tripleCount"]) # これだけ, 名前変えないときはこっちでOK
+    # or
+    computed: mapGetters({
+      myComponentDoubleCount: "doubleCount", # こっちの場合は、名称を変えることができる
+      myComponentTripleCount: "tripleCount"
+    })
+    # 上記の書き方だと、他にcomputedを定義したいときに定義できないのでその場合はスプレッド構文を使う
+    computed: {
+      otherComputed() {
+        # shori
+      },
+      ...mapGetters(["doubleCount", "tripleCount"])
+    }
+  }
+</script>
+
+
+## mutationとcommitを使って、stateを買える場所を1つに絞る
+以上の場合、store内のデータはグローバル変数のような扱いであり、どこからでも変更可能。
+→バグの温床となる。
+それを防ぐための仕組みがmutationsやcommit。
+
+Reactでいうactionやdispatch。
+もちろんこれを使わなくてもデータの変更は可能だが、必ずこれを使ってデータ変更をするようにする。
+そうすることでどこでデータ変更を行ったかがわかりやすくなる。
+非同期処理をかけないことが特徴。
+
+commitすることでmutationを使うことができる。
+
+// store.js
+import Vue from 'vue';
+import Vuex from 'vuex';
+
+Vue.use(Vuex);
+
+export default new Vuex.Store({
+  state: {
+    count: 2
+  },
+  getters: {
+    doubleCount: state => state.count * 2
+    tripleCount: state => state.count * 3
+  },
+  mutations: {
+    increment(state, number) { # 第一引数はstateが入る, 第二引数は好きな値を設定可能
+      state.count += number;
+    }
+  }
+}
+
+// home.vue
+<template>
+  <div>
+    <h3>Home</h3>
+    <p>{{ doubleCount }}</p>
+    <p>{{ tripleCount }}</p>
+  </div>
+</template>
+
+<script>
+  import {mapGetters} from "vuex" # これ
+
+  export default {
+    methods: {
+      increment() {
+        this.$store.commit('increment', 2) # 第一引数はmutation名, 第二引数はmutationに渡す値
+      },
+      decrement() {
+        this.$store.commit('decrement', 2)
+      }
+    },
+    computed: mapGetters(["doubleCount", "tripleCount"])
+  }
+</script>
+
+## mapMutationsヘルパー
+mapGettersのmutations版。
+
+// home.vue
+<template>
+  <div>
+    <h3>Home</h3>
+    <p>{{ doubleCount }}</p>
+    <p>{{ tripleCount }}</p>
+    <button @click="increment(1)">+1</button> # 引数はこちらに渡す
+    <button @click="decrement(2)">-1</button> # 引数はこちらに渡す
+  </div>
+</template>
+
+<script>
+  import {mapGetters} from "vuex"
+  import {mapMutations} from "vuex" # これ
+
+  export default {
+    methods: {
+      ...mapMutations(["increment", "decrement"]) # これでmutationを使える
+    },
+    computed: mapGetters(["doubleCount", "tripleCount"])
+  }
+</script>
+
+
+## 非同期でVuexを使う方法
+actionを使う。
+また、mutationはcommitで実行していたが、actionはdispatchで実行できる。
+変更はactionを通してのみという方針もあり。
+
+// store.js
+import Vue from 'vue';
+import Vuex from 'vuex';
+
+Vue.use(Vuex);
+
+export default new Vuex.Store({
+  state: {
+    count: 2
+  },
+  getters: {
+    doubleCount: state => state.count * 2
+    tripleCount: state => state.count * 3
+  },
+  mutations: {
+    increment(state, number) {
+      state.count += number;
+    }
+  },
+  actions: {
+    increment(context, number) {
+      context.commit('increment', number) # 第一引数はmutation名, 第二引数はmutationに渡す値
+    },
+    incrementAsync(context, number) {
+      setTimeout(() => {
+        context.commit('increment', number)
+      }, 1000)
+    }
+  }
+})
+
+// home.vue
+<template>
+  <div>
+    <h3>Home</h3>
+    <p>{{ doubleCount }}</p>
+    <p>{{ tripleCount }}</p>
+    <button @click="increment">+1</button>
+  </div>
+</template>
+
+<script>
+  export default {
+    methods: {
+      increment() {
+        this.$store.dispatch('increment', 2) # 第一引数はaction名, 第二引数はactionに渡す値
+      }
+    },
+  }
+</script>
+
+
+## mapActionsヘルパー
+mapGettersのactions版。
+
+// home.vue
+<template>
+  <div>
+    <h3>Home</h3>
+    <p>{{ doubleCount }}</p>
+    <p>{{ tripleCount }}</p>
+    <button @click="increment(2)">+1</button> # 引数はこちらに渡す
+  </div>
+</template>
+
+<script>
+  import {mapActions} from "vuex"
+
+  export default {
+    methods: {
+      ...mapActions(["increment"]) # これでactionを使える
+    },
+  }
+</script>
+
+
+## 双方向バインディング(v-model)でVuexを使う方法
+v-modelを使わないというか分解させて使う。
+v-model = :valueと@inputなので、それらに分けて使う。
+
+// store.js
+import Vue from 'vue';
+import Vuex from 'vuex';
+
+Vue.use(Vuex);
+
+export default new Vuex.Store({
+  state: {
+    message: ""
+  },
+  getters: {
+    message: state => state.message
+  },
+  mutations: {
+    updateMesage(state, newMessage) {
+      state.message = newMessage
+    }
+  },
+  actions: {
+    updateMessage({commit}, newMessage) {
+      commit('updateMesage', newMessage)
+    }
+  }
+})
+
+// home.vue
+<template>
+  <div>
+    <input type="text" :value="message" @input="updateMessage"></input>
+  </div>
+</template>
+
+<script>
+  import {mapActions} from "vuex"
+
+  export default {
+    computed: {
+      ...mapGetters(["message"])
+    }
+    methods: {
+      updateMessage(e) {
+        this.$store.dispatch("updateMessage", e.target.value)
+      }
+    },
+  }
+</script>
