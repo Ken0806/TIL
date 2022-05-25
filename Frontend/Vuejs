@@ -34,6 +34,9 @@ this.を使っても他のデータを参照することはできない。
 # computedとmethodsの違いは？
 computed: 依存関係に基づいてキャッシュされる。関係のない変更が加わったときには実行されない。いつ実行されるかというと、最初に描画されるときと、参照しているdataが変わった時だけ実行される。
 method: テンプレートの中が少しでも変わって再描画されたときに実行される。関係のない変更が加わった時にも実行されてしまい、無駄があるという問題がある(大規模な開発なら問題になる)。onclickなどのディレクティブに指定するときは問題ないのだと思う。あくまでプロパティとして使うイメージ持っておくと良さそう。
+
+https://zenn.dev/naoki_oshiumi/articles/8c99581ca5bdd0
+
   <script>
     new Vue({
       el: '#app',
@@ -60,6 +63,10 @@ method: テンプレートの中が少しでも変わって再描画されたと
 基本的にcomputedを使う。
 computedでできないときにウォッチャを使う。
 	具体的には、computedはテンプレート内で使っていないと、たとえ参照しているdataが変化しても実行されないので、そういう処理をしたいとき(非同期処理など)にウォッチャを使う。
+
+基本的にcoumputedを使うが、非同期処理を行う場合はreturnが使えないため、returnをするcomputedプロパティを使えない。そのような場合にwatchを使用するべきということです。
+(https://usconsort.com/vuejs-compare-computed/)
+
 computed: {
   lessThanThree: function() {
     return this.counter < 3 ? "less than 3" : "more than 3";
@@ -183,21 +190,21 @@ let vm = new Vue({
 vm.message = "書き換えられる"
 
 https://jp.vuejs.org/v2/api/
-ここの、インスタンスプロパティなどを見ると、取得できるプロパティやメソッドがかる。
+ここの、インスタンスプロパティなどを見ると、取得できるプロパティやメソッドがわかる。
 
 # インスタンス内から、dataを取得する方法
-    let vm = new Vue({
-      el: "#app",
-      data: {
-        message: "メッセージ",
-        message2: "メッセージ2",
-      },
-      computed: {
-        getData: function() {
-          return this.$data; # this.$dataは、インスタンス内のデータを取得する。
-        },
-      },
-    })
+let vm = new Vue({
+  el: "#app",
+  data: {
+    message: "メッセージ",
+    message2: "メッセージ2",
+  },
+  computed: {
+    getData: function() {
+      return this.$data; # this.$dataは、インスタンス内のデータを取得する。
+    },
+  },
+})
 
 # Vueのテンプレートの他の書き方
 上に書いた例とは別の書き方がある。
@@ -848,6 +855,7 @@ mapGettersのmutations版。
 
 ## 非同期でVuexを使う方法
 actionを使う。
+mutationでは非同期処理ができないため(Mutationで複数の状態の変更が非同期に行われた場合に挙動が予測不能になるのを防ぐ意図がある)。
 また、mutationはcommitで実行していたが、actionはdispatchで実行できる。
 変更はactionを通してのみという方針もあり。
 
